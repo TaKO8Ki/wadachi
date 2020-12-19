@@ -18,7 +18,13 @@ pub enum Activity {
         status: PullRequestStatus,
         created_at: String,
     },
-    CreateIssue,
+    CreateIssue {
+        name: String,
+        repository: Repository,
+        issue: PullRequest,
+        status: PullRequestStatus,
+        created_at: String,
+    },
     CreateRepository {
         name: String,
         repository: Repository,
@@ -28,6 +34,12 @@ pub enum Activity {
 
 #[derive(PartialEq, Debug)]
 pub struct PullRequest {
+    pub name: String,
+    pub url: String,
+}
+
+#[derive(PartialEq, Debug)]
+pub struct Issue {
     pub name: String,
     pub url: String,
 }
