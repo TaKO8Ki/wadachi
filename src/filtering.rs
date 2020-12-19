@@ -7,12 +7,32 @@ const ACTIVITY_NAME: &str = "summary span.color-text-primary.ws-normal.text-left
 const OPENED_PULL_REQUEST_REPOSITORY: &str = "summary div span";
 const REVIEWED_PULL_REQUEST_REPOSITORY: &str = "summary span span";
 const STATUS: &str = "ul li svg";
+
+#[derive(Debug, PartialEq)]
+enum WadachiError {
+    InvalidMonth(u8),
+}
+
+impl std::fmt::Display for WadachiError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match *self {
+            WadachiError::InvalidMonth(ref err) => {
+                write!(f, "the month {} is greater than 12 or less than 1.", err)
+            }
+        }
+    }
+}
+
+impl std::error::Error for WadachiError {}
+
+#[derive(Debug, PartialEq)]
 pub struct Filtering {
     pub user: String,
     pub from: Date,
     pub to: Date,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Date {
     pub year: u16,
     pub month: u8,
@@ -29,7 +49,13 @@ impl Filtering {
         self
     }
 
-    pub async fn execute(&self) -> surf::Result<Vec<Event>> {
+    pub async fn execute(&self) -> Result<Vec<Event>, Box<dyn std::error::Error>> {
+        if self.from.month < 1 || self.from.month > 12 {
+            return Err(Box::new(WadachiError::InvalidMonth(self.from.month)));
+        } else if self.to.month < 1 || self.to.month > 12 {
+            return Err(Box::new(WadachiError::InvalidMonth(self.to.month)));
+        }
+
         let timeline_body = Selector::parse(TIMELINE_BODY).unwrap();
         let activity = Selector::parse(ACTIVITY_NAME).unwrap();
         let pull_requests = Selector::parse("details details").unwrap();
@@ -257,6 +283,32 @@ impl Filtering {
 #[cfg(test)]
 mod tests {
     use crate::{Date, Filtering};
+
+    #[async_std::test]
+    async fn it_returns_error_when_from_month_is_less_than_1(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let result = Filtering {
+            user: "foo".to_string(),
+            from: Date {
+                year: 2019,
+                month: 0,
+            },
+            to: Date {
+                year: 2019,
+                month: 7,
+            },
+        }
+        .execute()
+        .await;
+        assert_eq!(result.is_err(), true);
+        if let Err(err) = result {
+            assert_eq!(
+                err.to_string(),
+                "the month 0 is greater than 12 or less than 1."
+            );
+        }
+        Ok(())
+    }
 
     #[test]
     fn test_term() {
