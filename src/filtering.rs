@@ -53,8 +53,7 @@ impl Filtering {
                     activity
                         .text()
                         .collect::<String>()
-                        .split("\n")
-                        .into_iter()
+                        .split('\n')
                         .map(|x| {
                             if x.trim() != "" {
                                 return format!("{} ", x.trim());
@@ -242,7 +241,6 @@ impl Filtering {
                 };
                 dates.append(
                     &mut (from..to)
-                        .into_iter()
                         .map(|month| (year, month))
                         .collect::<Vec<(u16, u8)>>(),
                 )
@@ -250,7 +248,6 @@ impl Filtering {
             dates
         } else {
             (self.from.month..self.to.month + 1)
-                .into_iter()
                 .map(|month| (self.from.year, month))
                 .collect::<Vec<(u16, u8)>>()
         }
