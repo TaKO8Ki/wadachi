@@ -1,5 +1,5 @@
 #[derive(PartialEq, Debug)]
-pub enum Activity {
+pub enum Event {
     CreateCommit {
         name: String,
         commit: Commit,

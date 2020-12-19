@@ -1,8 +1,6 @@
-use activity::{Activity, Commit, PullRequest, PullRequestStatus, Repository};
+use crate::event::{Commit, Event, PullRequest, PullRequestStatus, Repository};
 use regex::Regex;
 use scraper::{Html, Selector};
-
-use crate::activity;
 
 const TIMELINE_BODY: &str = "div.TimelineItem-body";
 const ACTIVITY_NAME: &str = "summary span.color-text-primary.ws-normal.text-left";
@@ -31,7 +29,7 @@ impl Filtering {
         self
     }
 
-    pub async fn execute(&self) -> surf::Result<Vec<Activity>> {
+    pub async fn execute(&self) -> surf::Result<Vec<Event>> {
         let timeline_body = Selector::parse(TIMELINE_BODY).unwrap();
         let activity = Selector::parse(ACTIVITY_NAME).unwrap();
         let pull_requests = Selector::parse("details details").unwrap();
@@ -41,10 +39,13 @@ impl Filtering {
 
         let mut activities = vec![];
         for (year, month) in self.term() {
-            let mut res = surf::get(format!(
-                "https://github.com/{0}?tab=overview&from={1}-{2}-01&to={1}-{2}-30",
-                self.user, year, month
-            ))
+            let mut res = surf::get(
+                format!(
+                    "https://github.com/{0}?tab=overview&from={1}-{2}-01&to={1}-{2}-30",
+                    self.user, year, month
+                )
+                .as_str(),
+            )
             .await?;
             let document = Html::parse_document(res.body_string().await?.as_str());
             for element in document.select(&timeline_body) {
@@ -74,7 +75,7 @@ impl Filtering {
                     let repository_iter = element.select(&a).step_by(2);
                     let commit_iter = element.select(&a).skip(1).step_by(2);
                     for (repository, commit) in repository_iter.zip(commit_iter) {
-                        activities.push(Activity::CreateCommit {
+                        activities.push(Event::CreateCommit {
                             name: activity_name.clone(),
                             commit: Commit {
                                 repository: Repository {
@@ -98,7 +99,7 @@ impl Filtering {
                     let repository_iter = element.select(&a);
                     let date_iter = element.select(&date);
                     for (repository, date) in repository_iter.zip(date_iter) {
-                        activities.push(Activity::CreateRepository {
+                        activities.push(Event::CreateRepository {
                             name: activity_name.clone(),
                             repository: Repository {
                                 name: repository.text().collect::<String>().trim().to_string(),
@@ -128,7 +129,7 @@ impl Filtering {
                         for ((pull_request, date), status) in
                             pull_request_iter.zip(date_iter).zip(status_iter)
                         {
-                            activities.push(Activity::CreatePullRequest {
+                            activities.push(Event::CreatePullRequest {
                                 name: activity_name.clone(),
                                 repository: Repository {
                                     name: repository_name.clone(),
@@ -182,7 +183,7 @@ impl Filtering {
                         for ((pull_request, date), status) in
                             pull_request_iter.zip(date_iter).zip(status_iter)
                         {
-                            activities.push(Activity::ReviewPullRequest {
+                            activities.push(Event::ReviewPullRequest {
                                 name: activity_name.clone(),
                                 repository: Repository {
                                     name: repository_name.clone(),

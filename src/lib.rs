@@ -1,4 +1,4 @@
-pub mod activity;
+pub mod event;
 pub mod filtering;
 
 use chrono::{Datelike, Local};
@@ -16,9 +16,4 @@ pub fn new(user: &str) -> Filtering {
             month: Local::now().date().month() as u8,
         },
     }
-}
-
-#[cfg(test)]
-mod tests {
-    const HOGE: &str = "https://github.com/{}?tab=overview&from=2020-11-01&to=2020-11-30";
 }
