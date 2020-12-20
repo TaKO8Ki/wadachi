@@ -9,3 +9,23 @@
  [Usage](#Usage) | [Examples](examples) | [Docs](https://docs.rs/wadachi)
 
 </div>
+
+
+## Dependencies
+
+```toml
+[dependencies]
+wadachi = "0.1.0-beta"
+async-std = { version = "1.5.0", features = ["attributes"] }
+```
+
+## Usage
+
+```rust
+#[async_std::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let activities = wadachi::new("TaKO8KI").from(2020, 12).execute().await?;
+    println!("{:?}o", activities);
+    Ok(())
+}
+```
