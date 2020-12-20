@@ -10,7 +10,16 @@
 
 </div>
 
-# Usage
+
+## Dependencies
+
+```toml
+[dependencies]
+wadachi = "0.1.0-beta"
+async-std = { version = "1.5.0", features = ["attributes"] }
+```
+
+## Usage
 
 ```rust
 #[async_std::main]
