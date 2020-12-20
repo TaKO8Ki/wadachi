@@ -1,6 +1,7 @@
 use crate::event::{Commit, Event, PullRequest, PullRequestStatus, Repository};
 use regex::Regex;
 use scraper::{Html, Selector};
+use std::error::Error;
 
 const TIMELINE_BODY: &str = "div.TimelineItem-body";
 const ACTIVITY_NAME: &str = "summary span.color-text-primary.ws-normal.text-left";
@@ -23,7 +24,7 @@ impl std::fmt::Display for WadachiError {
     }
 }
 
-impl std::error::Error for WadachiError {}
+impl Error for WadachiError {}
 
 #[derive(Debug, PartialEq)]
 pub struct Filtering {
@@ -49,7 +50,7 @@ impl Filtering {
         self
     }
 
-    pub async fn execute(&self) -> Result<Vec<Event>, Box<dyn std::error::Error>> {
+    pub async fn execute(&self) -> Result<Vec<Event>, Box<dyn Error>> {
         if self.from.month < 1 || self.from.month > 12 {
             return Err(Box::new(WadachiError::InvalidMonth(self.from.month)));
         } else if self.to.month < 1 || self.to.month > 12 {
@@ -241,12 +242,6 @@ impl Filtering {
                             })
                         }
                     }
-                } else if Regex::new(
-                    r"^Opened \d{1,} (other )?issue(s)? in \d{1,} repositor(y|ies)$",
-                )
-                .unwrap()
-                .is_match(activity_name.as_str())
-                {
                 }
             }
         }
