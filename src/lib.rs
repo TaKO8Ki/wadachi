@@ -10,10 +10,12 @@ pub fn new(user: &str) -> Filtering {
         from: Date {
             year: Local::now().date().year() as u16,
             month: Local::now().date().month() as u8,
+            day: Local::now().date().day() as u8,
         },
         to: Date {
             year: Local::now().date().year() as u16,
             month: Local::now().date().month() as u8,
+            day: Local::now().date().day() as u8,
         },
     }
 }
