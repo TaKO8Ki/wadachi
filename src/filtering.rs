@@ -3,6 +3,12 @@ use regex::Regex;
 use scraper::{Html, Selector};
 use std::error::Error;
 
+const PUSH_EVENT: &str = r"^Created \d{1,} commits in \d{1,} repositor(y|ies)$";
+const PULL_REQUEST_REVIEW_EVENT: &str =
+    r"^Reviewed \d{1,} pull request(s)? in \d{1,} repositor(y|ies)$";
+const PULL_REQUEST_EVENT: &str =
+    r"^Opened \d{1,} (other )?pull request(s)? in \d{1,} repositor(y|ies)$";
+
 pub(crate) const TIMELINE_BODY: &str = "div.TimelineItem-body";
 pub(crate) const EVENT_NAME: &str = "summary span.color-text-primary.ws-normal.text-left";
 pub(crate) const OPENED_PULL_REQUEST_REPOSITORY: &str = "summary div span";
@@ -68,10 +74,6 @@ impl Filtering {
 
         let timeline_body = Selector::parse(TIMELINE_BODY).unwrap();
         let activity = Selector::parse(EVENT_NAME).unwrap();
-        let pull_requests = Selector::parse("details details").unwrap();
-        let a = Selector::parse("ul li a").unwrap();
-        let status = Selector::parse(STATUS).unwrap();
-        let date = Selector::parse("time").unwrap();
 
         let mut events = vec![];
         for element in self.document().await?.select(&timeline_body) {
@@ -93,42 +95,19 @@ impl Filtering {
                 continue;
             };
 
-            if Regex::new(r"^Created \d{1,} commits in \d{1,} repositor(y|ies)$")
-                .unwrap()
-                .is_match(event_name.as_str())
-            {
+            if event_type(&event_name, PUSH_EVENT) {
                 event::fetch_push_event(element, &mut events, event_name);
             } else if Regex::new(r"^Created \d{1,} repositor(y|ies)$")
                 .unwrap()
                 .is_match(event_name.as_str())
             {
-                let repository_iter = element.select(&a);
-                let date_iter = element.select(&date);
-                for (repository, date) in repository_iter.zip(date_iter) {
-                    events.push(Event::CreateRepository {
-                        name: event_name.clone(),
-                        repository: Repository {
-                            name: repository.text().collect::<String>().trim().to_string(),
-                            url: repository.value().attr("href").unwrap().trim().to_string(),
-                        },
-                        created_at: date.text().collect::<String>().trim().to_string(),
-                    })
-                }
-            } else if Regex::new(
-                r"^Opened \d{1,} (other )?pull request(s)? in \d{1,} repositor(y|ies)$",
-            )
-            .unwrap()
-            .is_match(event_name.as_str())
-            {
+                event::fetch_create_event(element, &mut events, event_name)
+            } else if event_type(&event_name, PULL_REQUEST_EVENT) {
                 event::fetch_pull_request_event(element, &mut events, event_name)
-            } else if Regex::new(r"^Reviewed \d{1,} pull request(s)? in \d{1,} repositor(y|ies)$")
-                .unwrap()
-                .is_match(event_name.as_str())
-            {
+            } else if event_type(&event_name, PULL_REQUEST_REVIEW_EVENT) {
                 event::fetch_pull_request_review_event(element, &mut events, event_name)
             }
         }
-
         Ok(events)
     }
 
@@ -143,6 +122,10 @@ impl Filtering {
         .await?;
         Ok(Html::parse_document(res.body_string().await?.as_str()))
     }
+}
+
+fn event_type(name: &str, event_type: &str) -> bool {
+    Regex::new(event_type).unwrap().is_match(name)
 }
 
 #[cfg(test)]

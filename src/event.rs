@@ -180,3 +180,20 @@ pub(crate) fn fetch_pull_request_review_event(
         }
     }
 }
+
+pub(crate) fn fetch_create_event(element: ElementRef, events: &mut Vec<Event>, event_name: String) {
+    let a = Selector::parse("ul li a").unwrap();
+    let date = Selector::parse("time").unwrap();
+    let repository_iter = element.select(&a);
+    let date_iter = element.select(&date);
+    for (repository, date) in repository_iter.zip(date_iter) {
+        events.push(Event::CreateRepository {
+            name: event_name.clone(),
+            repository: Repository {
+                name: repository.text().collect::<String>().trim().to_string(),
+                url: repository.value().attr("href").unwrap().trim().to_string(),
+            },
+            created_at: date.text().collect::<String>().trim().to_string(),
+        })
+    }
+}
