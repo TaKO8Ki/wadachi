@@ -1,4 +1,4 @@
-use crate::event::{self, Event, PullRequest, PullRequestStatus, Repository};
+use crate::event::{self, Event};
 use regex::Regex;
 use scraper::{Html, Selector};
 use std::error::Error;
