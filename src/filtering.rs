@@ -8,6 +8,7 @@ const PULL_REQUEST_REVIEW_EVENT: &str =
     r"^Reviewed \d{1,} pull request(s)? in \d{1,} repositor(y|ies)$";
 const PULL_REQUEST_EVENT: &str =
     r"^Opened \d{1,} (other )?pull request(s)? in \d{1,} repositor(y|ies)$";
+const CREATE_REPOSITORY_EVENT: &str = r"^Created \d{1,} repositor(y|ies)$";
 
 pub(crate) const TIMELINE_BODY: &str = "div.TimelineItem-body";
 pub(crate) const EVENT_NAME: &str = "summary span.color-text-primary.ws-normal.text-left";
@@ -97,10 +98,7 @@ impl Filtering {
 
             if event_type(&event_name, PUSH_EVENT) {
                 event::fetch_push_event(element, &mut events, event_name);
-            } else if Regex::new(r"^Created \d{1,} repositor(y|ies)$")
-                .unwrap()
-                .is_match(event_name.as_str())
-            {
+            } else if event_type(&event_name, CREATE_REPOSITORY_EVENT) {
                 event::fetch_create_event(element, &mut events, event_name)
             } else if event_type(&event_name, PULL_REQUEST_EVENT) {
                 event::fetch_pull_request_event(element, &mut events, event_name)
@@ -114,8 +112,14 @@ impl Filtering {
     async fn document(&self) -> Result<Html, Box<dyn Error>> {
         let mut res = surf::get(
             format!(
-                "https://github.com/{}?tab=overview&from={}-{}-01&to={}-{}-30",
-                self.user, self.from.year, self.from.month, self.to.year, self.from.month
+                "https://github.com/{}?tab=overview&from={}-{}-{:02}&to={}-{}-{:02}",
+                self.user,
+                self.from.year,
+                self.from.month,
+                self.from.day,
+                self.to.year,
+                self.to.month,
+                self.to.day
             )
             .as_str(),
         )
