@@ -21,11 +21,11 @@ pub enum Event {
         status: PullRequestStatus,
         created_at: String,
     },
-    CreateIssue {
+    Issue {
         name: String,
         repository: Repository,
-        issue: PullRequest,
-        status: PullRequestStatus,
+        issue: Issue,
+        status: IssueStatus,
         created_at: String,
     },
     CreateRepository {
@@ -49,6 +49,12 @@ pub struct Issue {
 
 #[derive(PartialEq, Debug)]
 pub enum PullRequestStatus {
+    Opened,
+    Closed,
+}
+
+#[derive(PartialEq, Debug)]
+pub enum IssueStatus {
     Opened,
     Closed,
 }
