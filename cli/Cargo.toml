@@ -1,0 +1,10 @@
+[package]
+name = "cli"
+version = "0.1.0"
+authors = ["Takayuki Maeda <takoyaki0316@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+clap = "2.33"
+wadachi = { path = "../wadachi" }
+async-std = { version = "1.5.0", features = ["attributes"] }
