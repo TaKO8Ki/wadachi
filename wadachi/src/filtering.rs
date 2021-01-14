@@ -9,6 +9,7 @@ const PULL_REQUEST_REVIEW_EVENT: &str =
 const PULL_REQUEST_EVENT: &str =
     r"^Opened \d{1,} (other )?pull request(s)? in \d{1,} repositor(y|ies)$";
 const CREATE_REPOSITORY_EVENT: &str = r"^Created \d{1,} repositor(y|ies)$";
+const ISSUE_EVENT: &str = r"^Opened \d{1,} issue(s)? in \d{1,} repositor(y|ies)$";
 
 pub(crate) const TIMELINE_BODY: &str = "div.TimelineItem-body";
 pub(crate) const EVENT_NAME: &str = "summary span.color-text-primary.ws-normal.text-left";
@@ -96,14 +97,25 @@ impl Filtering {
                 continue;
             };
 
-            if event_type(&event_name, PUSH_EVENT) {
+            if Regex::new(PUSH_EVENT).unwrap().is_match(&event_name) {
                 event::fetch_push_event(element, &mut events, event_name);
-            } else if event_type(&event_name, CREATE_REPOSITORY_EVENT) {
-                event::fetch_create_event(element, &mut events, event_name)
-            } else if event_type(&event_name, PULL_REQUEST_EVENT) {
+            } else if Regex::new(CREATE_REPOSITORY_EVENT)
+                .unwrap()
+                .is_match(&event_name)
+            {
+                event::fetch_create_repository_event(element, &mut events, event_name)
+            } else if Regex::new(PULL_REQUEST_EVENT)
+                .unwrap()
+                .is_match(&event_name)
+            {
                 event::fetch_pull_request_event(element, &mut events, event_name)
-            } else if event_type(&event_name, PULL_REQUEST_REVIEW_EVENT) {
+            } else if Regex::new(PULL_REQUEST_REVIEW_EVENT)
+                .unwrap()
+                .is_match(&event_name)
+            {
                 event::fetch_pull_request_review_event(element, &mut events, event_name)
+            } else if Regex::new(ISSUE_EVENT).unwrap().is_match(&event_name) {
+                event::fetch_issue_event(element, &mut events, event_name)
             }
         }
         Ok(events)
@@ -126,10 +138,6 @@ impl Filtering {
         .await?;
         Ok(Html::parse_document(res.body_string().await?.as_str()))
     }
-}
-
-fn event_type(name: &str, event_type: &str) -> bool {
-    Regex::new(event_type).unwrap().is_match(name)
 }
 
 #[cfg(test)]
