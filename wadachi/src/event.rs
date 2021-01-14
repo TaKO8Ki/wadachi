@@ -187,7 +187,11 @@ pub(crate) fn fetch_pull_request_review_event(
     }
 }
 
-pub(crate) fn fetch_create_event(element: ElementRef, events: &mut Vec<Event>, event_name: String) {
+pub(crate) fn fetch_create_repository_event(
+    element: ElementRef,
+    events: &mut Vec<Event>,
+    event_name: String,
+) {
     let a = Selector::parse("ul li a").unwrap();
     let date = Selector::parse("time").unwrap();
     let repository_iter = element.select(&a);
@@ -201,5 +205,49 @@ pub(crate) fn fetch_create_event(element: ElementRef, events: &mut Vec<Event>, e
             },
             created_at: date.text().collect::<String>().trim().to_string(),
         })
+    }
+}
+
+pub(crate) fn fetch_issue_event(element: ElementRef, events: &mut Vec<Event>, event_name: String) {
+    let issues = Selector::parse("details details").unwrap();
+    let a = Selector::parse("ul li a").unwrap();
+    let status = Selector::parse(filtering::STATUS).unwrap();
+    let date = Selector::parse("time").unwrap();
+    for repository in element.select(&issues) {
+        let repository_name = repository
+            .select(&Selector::parse(filtering::OPENED_PULL_REQUEST_REPOSITORY).unwrap())
+            .next()
+            .unwrap()
+            .text()
+            .collect::<String>()
+            .trim()
+            .to_string();
+        let issue_iter = repository.select(&a);
+        let status_iter = repository.select(&status);
+        let date_iter = repository.select(&date);
+        for ((pull_request, date), status) in issue_iter.zip(date_iter).zip(status_iter) {
+            events.push(Event::Issue {
+                name: event_name.clone(),
+                repository: Repository {
+                    name: repository_name.clone(),
+                    url: format!("/{}", repository_name.clone()),
+                },
+                issue: Issue {
+                    name: pull_request.text().collect::<String>().trim().to_string(),
+                    url: pull_request
+                        .value()
+                        .attr("href")
+                        .unwrap()
+                        .trim()
+                        .to_string(),
+                },
+                status: if status.value().attr("class").unwrap().contains("text-green") {
+                    IssueStatus::Opened
+                } else {
+                    IssueStatus::Closed
+                },
+                created_at: date.text().collect::<String>().trim().to_string(),
+            })
+        }
     }
 }
